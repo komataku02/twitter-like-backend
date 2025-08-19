@@ -2,8 +2,8 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -21,6 +21,8 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'username',
+        'firebase_uid',
     ];
 
     /**
@@ -42,4 +44,22 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
     ];
+
+    //投稿
+    public function posts():HasMany
+    {
+        return $this->hasMany(Post::class);
+    }
+
+    //コメント
+    public function comments():HasMany
+    {
+        return $this->hasMany(Comment::class);
+    }
+
+    //いいね
+    public function likes():HasMany
+    {
+        return $this->hasMany(Like::class);
+    }
 }
