@@ -1,23 +1,25 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\HealthCheckController;
+use App\Http\Controllers\Api\V1\PostsController;
+use App\Http\Controllers\Api\V1\CommentsController;
+use App\Http\Controllers\Api\V1\LikesController;
 
-/*
-|--------------------------------------------------------------------------
-| API Routes
-|--------------------------------------------------------------------------
-|
-| Here is where you can register API routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "api" middleware group. Make something great!
-|
-*/
-
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
+// /api は RouteServiceProvider 側で自動付与される想定
 Route::prefix('v1')->group(function () {
+    // Health
     Route::get('/health', [HealthCheckController::class, 'index']);
+
+    // Posts
+    Route::get('/posts', [PostsController::class, 'index']);
+    Route::post('/posts', [PostsController::class, 'store']);
+    Route::delete('/posts/{post}', [PostsController::class, 'destroy']);
+
+    // Comments
+    Route::get('/posts/{post}/comments', [CommentsController::class, 'index']);
+    Route::post('/posts/{post}/comments', [CommentsController::class, 'store']);
+
+    // Likes (toggle)
+    Route::post('/posts/{post}/likes/toggle', [LikesController::class, 'toggle']);
 });
