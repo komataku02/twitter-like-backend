@@ -27,7 +27,9 @@ class PostsController extends Controller
 
         $post = Post::create($data);
 
-        return response()->json($post->load('user_id,username'),201);
+        $post->load(['user:id,username'])->loadCount(['comments','likes']);
+
+        return response()->json($post,201);
     }
 
     //DELETE /api/v1/posts/{post}
