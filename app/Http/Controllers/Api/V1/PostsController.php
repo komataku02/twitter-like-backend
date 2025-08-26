@@ -22,7 +22,7 @@ class PostsController extends Controller
         //※後でFirebase認証に書き換え予定。今はuser_idを受け取る。
         $data = $request->validate([
             'user_id' => ['required', 'integer', 'exists:users,id'],
-            'content' => ['required', 'string', 'max:120'],
+            'content' => ['required', 'string', 'grapheme_max:120'],
         ]);
 
         $post = Post::create($data);
