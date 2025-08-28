@@ -15,24 +15,21 @@ class LikesController extends Controller
         $data = $request->validate([
             'user_id' => ['required','integer','exists:users,id'],
         ]);
+        $userId = $data['user_id'];
 
-        $like = Like::where('post_id',$post->id)->where('User_id',$data['user_id'])->first();
+        $like = $post->likes()->where('user_id', $userId)->first();
 
         if ($like) {
             $like->delete();
             $status = 'unliked';
         } else {
-            Like::create([
-                'post_id' => $post->id, 'user_id' => $data['user_id'],
-            ]);
+            $post->likes()->create(['user_id' => $userId]);
             $status = 'liked';
         }
 
-        $likesCount = Like::where('post_id', $post->id)->count();
-
         return response()->json([
-            'status' => $status,
-            'likes_count' => $likesCount,
+            'status'       => $status,
+            'likes_count'  => $post->likes()->count(),
         ]);
     }
 }
