@@ -38,4 +38,14 @@ class PostsController extends Controller
         $post->delete();
         return response()->json(['deleted' => true]);
     }
+
+    //GET /api/v1/posts/{post}
+    public function show(Post $post)
+    {
+        //必要な関連と件数を読込
+        $post->load(['user:id,username'])
+        ->loadCount(['comments', 'likes']);
+
+        return response()->json($post);
+    }
 }

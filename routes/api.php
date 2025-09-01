@@ -15,6 +15,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/posts', [PostsController::class, 'index']);
     Route::post('/posts', [PostsController::class, 'store']);
     Route::delete('/posts/{post}', [PostsController::class, 'destroy']);
+    Route::get('/posts/{post}', [PostsController::class, 'show']);
 
     // Comments
     Route::get('/posts/{post}/comments', [CommentsController::class, 'index']);
