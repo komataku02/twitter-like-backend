@@ -15,12 +15,12 @@ Route::prefix('v1')->group(function () {
     Route::get('/posts', [PostsController::class, 'index']);
     Route::post('/posts', [PostsController::class, 'store']);
     Route::delete('/posts/{post}', [PostsController::class, 'destroy']);
-    Route::get('/posts/{post}', [PostsController::class, 'show']);
+    Route::get('/posts/{post}', [PostsController::class, 'show'])->whereNumber('post');
 
     // Comments
-    Route::get('/posts/{post}/comments', [CommentsController::class, 'index']);
-    Route::post('/posts/{post}/comments', [CommentsController::class, 'store']);
+    Route::get('/posts/{post}/comments', [CommentsController::class, 'index'])->whereNumber('post');
+    Route::post('/posts/{post}/comments', [CommentsController::class, 'store'])->whereNumber('post');
 
     // Likes (toggle)
-    Route::post('/posts/{post}/likes/toggle', [LikesController::class, 'toggle']);
+    Route::post('/posts/{post}/likes/toggle', [LikesController::class, 'toggle'])->whereNumber('post');
 });
