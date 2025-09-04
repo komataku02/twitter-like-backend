@@ -20,6 +20,7 @@ Route::prefix('v1')->group(function () {
     // Comments
     Route::get('/posts/{post}/comments', [CommentsController::class, 'index'])->whereNumber('post');
     Route::post('/posts/{post}/comments', [CommentsController::class, 'store'])->whereNumber('post');
+    Route::delete('posts/{post}/comments/{comment}', [CommentsController::class, 'destroy']);
 
     // Likes (toggle)
     Route::post('/posts/{post}/likes/toggle', [LikesController::class, 'toggle'])->whereNumber('post');
