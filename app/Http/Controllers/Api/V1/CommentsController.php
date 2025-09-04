@@ -42,4 +42,21 @@ class CommentsController extends Controller
 
         return response()->json($comment, 201);
     }
+
+    // DELETE /api/v1/posts/{post}/comments/{comment}
+    public function destroy(Post $post, Comment $comment)
+    {
+        // 簡易認可（本来はPolicyかAuthで判定）
+        // 暫定: user_id=1 だけ削除可
+        if ((int)$comment->user_id !== 1) {
+            return response()->json(['message' => 'Forbidden'], 403);
+        }
+        // 紐付け整合（別ポストのコメント削除防止）
+        if ((int)$comment->post_id !== (int)$post->id) {
+            return response()->json(['message' => 'Not Found'], 404);
+        }
+        $comment->delete();
+        return response()->json(['deleted' => true]);
+    }
 }
+
