@@ -16,6 +16,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/posts', [PostsController::class, 'store']);
     Route::delete('/posts/{post}', [PostsController::class, 'destroy']);
     Route::get('/posts/{post}', [PostsController::class, 'show'])->whereNumber('post');
+    Route::put('/posts/{post}', [PostsController::class, 'update']);
 
     // Comments
     Route::get('/posts/{post}/comments', [CommentsController::class, 'index'])->whereNumber('post');
