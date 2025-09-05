@@ -48,4 +48,19 @@ class PostsController extends Controller
 
         return response()->json($post);
     }
+
+    public function update(Request $request, Post $post)
+    {
+        //TODO:認可(本人のみ編集)は後でPolicyで実装。今は省略
+        $data = $request->validate([
+            'content' => ['required', 'string', 'grapheme_max:120'],
+        ]);
+
+        $post->update(['content' => trim($data['content'])]);
+
+        //一覧と同じ整合性のある返却
+        $post->load(['user:id,username'])->loadCount(['comments','likes']);
+
+        return response()->json($post);
+    }
 }
