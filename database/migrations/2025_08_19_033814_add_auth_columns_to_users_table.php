@@ -15,7 +15,7 @@ return new class extends Migration
             // ユーザーネーム(20文字いない)
             $table->string('username', 20)->after('name');
             // Firebase UID(ログイン識別用): 一意制約
-            $table->string('firebase_uid')->unique()->nullable()->after('email');
+            $table->string('firebase_uid')->unique();
         });
     }
 
