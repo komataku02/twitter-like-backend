@@ -4,32 +4,42 @@ namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
 use App\Models\Post;
+use App\Models\PostImage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Storage;
 
 class PostsController extends Controller
 {
     //GET /api/v1/posts
-    public function index()
+    public function index(Request $req)
     {
-        $posts = Post::with(['user:id,username'])->withCount(['comments','likes'])->orderByDesc('id')->paginate(20);
-
-        return response()->json($posts);
+        return Post::with(['user_id,username,name','images'])->latest()->paginate(20);
     }
 
     //POST /api/v1/posts
-    public function store(Request $request)
+    public function store(StorePostRequest $req)
     {
-        //※後でFirebase認証に書き換え予定。今はuser_idを受け取る。
-        $data = $request->validate([
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'content' => ['required', 'string', 'grapheme_max:120'],
+        $post = Post::create([
+            'user_id' => auth()->id(),
+            'body' => $req->string('body')->toString() ?: null,
         ]);
 
-        $post = Post::create($data);
-
-        $post->load(['user:id,username'])->loadCount(['comments','likes']);
-
-        return response()->json($post,201);
+        /** @var \illuminate\Http\UploadedFile[] $files */
+        $files = $req->file('images', []);
+        foreach ($files as $i => $file) {
+            $path =$file->store("posts/{$post->id}",'public');
+            $imgSize = @getimagesize($file->getRealPath());
+            PostImage::create([
+                'post_id' => $post->id,
+                'path' => $path,
+                'order' => $i,
+                'width' => $imageSize[0] ?? null,
+                'height' => $imageSize[1] ?? null,
+                'mime' => $file->getMimeType(),
+                'size' => $file->getSize(),
+            ]);
+        }
+        return $post->load(['user:id,username,name','images']);
     }
 
     //DELETE /api/v1/posts/{post}
@@ -42,11 +52,7 @@ class PostsController extends Controller
     //GET /api/v1/posts/{post}
     public function show(Post $post)
     {
-        //必要な関連と件数を読込
-        $post->load(['user:id,username'])
-        ->loadCount(['comments', 'likes']);
-
-        return response()->json($post);
+        return $post->load(['user_id,username,name','images']);
     }
 
     public function update(Request $request, Post $post)

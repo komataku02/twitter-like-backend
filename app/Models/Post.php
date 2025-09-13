@@ -32,5 +32,11 @@ class Post extends Model
     {
         return $this->hasMany(Like::class);
     }
+
+    //画像一覧
+    public function images()
+    {
+        return $this->hasMany(\App\Models\PostImage::class)->orderBy('order');
+    }
 }
 
