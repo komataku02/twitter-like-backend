@@ -12,8 +12,16 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('post_images', function (Blueprint $table) {
-            $table->id();
-            $table->timestamps();
+            if (!Schema::hasColumn('post_images', 'post_id')) {
+                $table->foreignId('post_id')->constrained('posts')->cascadeOnDelete();
+            }
+            if (!Schema::hasColumn('post_images', 'path')) {
+                $table->string('path'); // storageの相対パスなど
+            }
+            if (!Schema::hasColumn('post_images', 'order')) {
+                $table->unsignedTinyInteger('order')->default(0);
+            }
+            $table->index('post_id');
         });
     }
 

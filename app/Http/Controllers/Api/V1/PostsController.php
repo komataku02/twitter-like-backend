@@ -6,66 +6,68 @@ use App\Http\Controllers\Controller;
 use App\Models\Post;
 use App\Models\PostImage;
 use Illuminate\Http\Request;
+use App\Http\Requests\StorePostRequest;
 use Illuminate\Support\Facades\Storage;
 
 class PostsController extends Controller
 {
-    //GET /api/v1/posts
-    public function index(Request $req)
+    // GET /api/v1/posts
+    public function index(Request $request)
     {
-        return Post::with(['user_id,username,name','images'])->latest()->paginate(20);
+        // ※ with() は「user_id」ではなくリレーション名「user」を使う
+        return Post::with(['user:id,username,name', 'images'])
+            ->latest()
+            ->paginate(20);
     }
 
-    //POST /api/v1/posts
-    public function store(StorePostRequest $req)
+    // POST /api/v1/posts
+    public function store(StorePostRequest $request)
     {
+        /** @var \App\Models\User|null $auth */
+        $auth = $request->attributes->get('auth_user');
+
+        // 認証必須：auth_user が無い時に 401 を返す（← 逆になっていた）
+        if (!$auth) {
+            return response()->json(['message' => '認証されていません'], 401);
+        }
+
+        // StorePostRequest で検証済み（body を受けて DB の content に入れる）
+        $text = $request->validated()['body'];
+
         $post = Post::create([
-            'user_id' => auth()->id(),
-            'body' => $req->string('body')->toString() ?: null,
+            'user_id' => $auth->id,
+            'content' => $text,
         ]);
 
-        /** @var \illuminate\Http\UploadedFile[] $files */
-        $files = $req->file('images', []);
-        foreach ($files as $i => $file) {
-            $path =$file->store("posts/{$post->id}",'public');
-            $imgSize = @getimagesize($file->getRealPath());
-            PostImage::create([
-                'post_id' => $post->id,
-                'path' => $path,
-                'order' => $i,
-                'width' => $imageSize[0] ?? null,
-                'height' => $imageSize[1] ?? null,
-                'mime' => $file->getMimeType(),
-                'size' => $file->getSize(),
-            ]);
-        }
-        return $post->load(['user:id,username,name','images']);
+        $post->loadMissing(['user:id,username,name'])->loadCount(['comments', 'likes']);
+
+        return response()->json($post, 201);
     }
 
-    //DELETE /api/v1/posts/{post}
+    // DELETE /api/v1/posts/{post}
     public function destroy(Post $post)
     {
         $post->delete();
         return response()->json(['deleted' => true]);
     }
 
-    //GET /api/v1/posts/{post}
+    // GET /api/v1/posts/{post}
     public function show(Post $post)
     {
-        return $post->load(['user_id,username,name','images']);
+        // ここも「user_id」ではなく「user」
+        return $post->load(['user:id,username,name', 'images']);
     }
 
+    // PUT /api/v1/posts/{post}
     public function update(Request $request, Post $post)
     {
-        //TODO:認可(本人のみ編集)は後でPolicyで実装。今は省略
+        // 「grapheme_max」は未定義なら 500 になるので通常の max を使用
         $data = $request->validate([
-            'content' => ['required', 'string', 'grapheme_max:120'],
+            'content' => ['required', 'string', 'max:120'],
         ]);
 
         $post->update(['content' => trim($data['content'])]);
-
-        //一覧と同じ整合性のある返却
-        $post->load(['user:id,username'])->loadCount(['comments','likes']);
+        $post->load(['user:id,username'])->loadCount(['comments', 'likes']);
 
         return response()->json($post);
     }
