@@ -14,7 +14,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/posts/{post}', [PostsController::class, 'show'])->whereNumber('post');
     Route::get('/posts/{post}/comments', [CommentsController::class, 'index'])->whereNumber('post');
 
-    // 認証必須（write系）
+    // 認証必須（write系）※ prefix は付けない！同じ /v1 グループ内で middleware だけ付与
     Route::middleware('firebase')->group(function () {
         Route::post('/posts', [PostsController::class, 'store']);
         Route::put('/posts/{post}', [PostsController::class, 'update'])->whereNumber('post');

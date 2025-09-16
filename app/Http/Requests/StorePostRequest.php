@@ -14,6 +14,13 @@ class StorePostRequest extends FormRequest
         return true;
     }
 
+    protected function prepareForValidation(): void
+    {
+        if ($this->input('body') === null && $this->filled('content')) {
+            $this->merge(['body' => $this->input('content')]);
+        }
+    }
+
     /**
      * Get the validation rules that apply to the request.
      *
@@ -22,9 +29,9 @@ class StorePostRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => ['required', 'string','maz:280'],
-            'images' => ['nullable','array','maz:4'],
-            'images.*' => ['file','image','mimes:jpeg,jpg,png,webp,gif','maz:5120'],
+            'body' => ['required', 'string','max:120'],
+            'images' => ['nullable','array','max:4'],
+            'images.*' => ['file','image','mimes:jpeg,jpg,png,webp,gif','max:5120'],
         ];
     }
 
@@ -37,5 +44,13 @@ class StorePostRequest extends FormRequest
                 $v->errors()->add('body','本文または画像のどちらか1つは必須です。');
             }
         });
+    }
+
+    public function messages(): array
+    {
+        return [
+            'body.required' => '本文は必須です',
+            'body.max' => '本文は120文字以内で入力して下さい',
+        ];
     }
 }
