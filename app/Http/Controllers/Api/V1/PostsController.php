@@ -3,10 +3,11 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\StorePostRequest;
 use App\Models\Post;
 use App\Models\PostImage;
 use Illuminate\Http\Request;
-use App\Http\Requests\StorePostRequest;
+use Illuminate\Support\Facades\DB;        // ★ これが必須（今回の本命）
 use Illuminate\Support\Facades\Storage;
 
 class PostsController extends Controller
@@ -14,7 +15,6 @@ class PostsController extends Controller
     // GET /api/v1/posts
     public function index(Request $request)
     {
-        // ※ with() は「user_id」ではなくリレーション名「user」を使う
         return Post::with(['user:id,username,name', 'images'])
             ->latest()
             ->paginate(20);
@@ -23,25 +23,55 @@ class PostsController extends Controller
     // POST /api/v1/posts
     public function store(StorePostRequest $request)
     {
-        /** @var \App\Models\User|null $auth */
-        $auth = $request->attributes->get('auth_user');
-
-        // 認証必須：auth_user が無い時に 401 を返す（← 逆になっていた）
-        if (!$auth) {
-            return response()->json(['message' => '認証されていません'], 401);
+        /** @var \App\Models\User|null $user */
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['message' => 'Unauthenticated.'], 401);
         }
 
-        // StorePostRequest で検証済み（body を受けて DB の content に入れる）
-        $text = $request->validated()['body'];
+        $validated = $request->validated();
 
-        $post = Post::create([
-            'user_id' => $auth->id,
-            'content' => $text,
-        ]);
+        return DB::transaction(function () use ($user, $request, $validated) {
+            $post = new Post();
+            $post->user_id = $user->id;
+            $post->content = $validated['content'] ?? null;
+            $post->save();
 
-        $post->loadMissing(['user:id,username,name'])->loadCount(['comments', 'likes']);
+            // 画像は単体/配列の両方に耐える
+            $files = $request->file('images', []);
+            if ($files && !is_array($files)) {
+                $files = [$files];
+            }
 
-        return response()->json($post, 201);
+            foreach (array_values($files) as $idx => $file) {
+                // storage/app/public/post-images に保存
+                $storedPath = Storage::disk('public')->putFile('post-images', $file);
+
+                // 画像サイズ（取得失敗時は null）
+                $w = null;
+                $h = null;
+                try {
+                    [$w, $h] = @getimagesize($file->getRealPath()) ?: [null, null];
+                } catch (\Throwable $e) {
+                    // noop
+                }
+
+                PostImage::create([
+                    'post_id' => $post->id,
+                    'path'    => $storedPath, // 例: post-images/abc.jpg
+                    'width'   => $w,
+                    'height'  => $h,
+                    'order'   => $idx,
+                ]);
+            }
+
+            $post->load([
+                'user:id,username,name',
+                'images',
+            ])->loadCount(['comments', 'likes']);
+
+            return response()->json($post, 201);
+        });
     }
 
     // DELETE /api/v1/posts/{post}
@@ -54,14 +84,12 @@ class PostsController extends Controller
     // GET /api/v1/posts/{post}
     public function show(Post $post)
     {
-        // ここも「user_id」ではなく「user」
         return $post->load(['user:id,username,name', 'images']);
     }
 
     // PUT /api/v1/posts/{post}
     public function update(Request $request, Post $post)
     {
-        // 「grapheme_max」は未定義なら 500 になるので通常の max を使用
         $data = $request->validate([
             'content' => ['required', 'string', 'max:120'],
         ]);

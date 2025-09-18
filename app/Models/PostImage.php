@@ -11,13 +11,14 @@ class PostImage extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['post_id','path','order','width','height','mime','size'];
+    protected $fillable = ['post_id','path','order','width','height'];
     protected $appends = ['url'];
 
-    public function post(): BelongsTo { return $this->belongsTo(Post::class);}
+    public function post(): BelongsTo {
+        return $this->belongsTo(Post::class);}
 
     public function getUrlAttribute(): string
     {
-        return Storage::url($this->path);
+        return Storage::disk('public')->url($this->path);
     }
 }

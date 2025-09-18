@@ -6,42 +6,37 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class StorePostRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
         return true;
     }
 
-    protected function prepareForValidation(): void
-    {
-        if ($this->input('body') === null && $this->filled('content')) {
-            $this->merge(['body' => $this->input('content')]);
-        }
-    }
-
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
+        // ★ 画像1枚あたりの上限(MB)を .env から可変に（既定 15MB）
+        $maxMb = (int) env('POST_IMAGE_MAX_MB', 15);
+        $maxKb = $maxMb * 1024;
+
         return [
-            'body' => ['required', 'string','max:120'],
-            'images' => ['nullable','array','max:4'],
-            'images.*' => ['file','image','mimes:jpeg,jpg,png,webp,gif','max:5120'],
+            'content'   => ['nullable', 'string', 'max:120'],
+            'images'    => ['nullable', 'array', 'max:4'],
+            // ★ 'max:' は KB 指定
+            'images.*'  => ['file', 'image', 'mimes:jpeg,jpg,png,webp,gif', "max:{$maxKb}"],
         ];
     }
 
     public function withValidator($validator)
     {
         $validator->after(function ($v) {
-            $hasBody = filled($this->input('body'));
-            $hasFiles = is_array($this->file('images')) && count($this->file('images')) > 0;
-            if (!$hasBody && !$hasFiles) {
-                $v->errors()->add('body','本文または画像のどちらか1つは必須です。');
+            $content = (string) $this->input('content', '');
+            $hasText = trim($content) !== '';
+
+            $files = $this->file('images');
+            $count = is_array($files) ? count($files) : ($files ? 1 : 0);
+            $hasImages = $this->hasFile('images') && $count > 0;
+
+            if (!$hasText && !$hasImages) {
+                $v->errors()->add('content', '本文または画像のいずれかは必須です。');
             }
         });
     }
@@ -49,8 +44,12 @@ class StorePostRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'body.required' => '本文は必須です',
-            'body.max' => '本文は120文字以内で入力して下さい',
+            'content.max'   => '本文は120文字以内で入力してください。',
+            'images.array'  => '画像の送信形式が不正です。',
+            'images.max'    => '画像は最大4枚までです。',
+            'images.*.image' => '画像ファイルを選択してください。',
+            'images.*.mimes' => '対応形式は jpeg,jpg,png,webp,gif です。',
+            'images.*.max'  => '各画像は :max KB（約 ' . env('POST_IMAGE_MAX_MB', 15) . 'MB）までです。',
         ];
     }
 }

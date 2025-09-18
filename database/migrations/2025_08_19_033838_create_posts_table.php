@@ -13,8 +13,13 @@ return new class extends Migration
     {
         Schema::create('posts', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete(); // ユーザー削除時に投稿も削除
-            $table->string('content', 120); // つぶやき本文（120文字以内）
+
+            // ユーザー削除時に投稿も削除
+            $table->foreignId('user_id')->constrained('users')->cascadeOnDelete();
+
+            // ★ 本文は NULL 許容（画像のみ投稿を許可）
+            $table->string('content', 120)->nullable();
+
             $table->timestamps();
 
             $table->index('user_id');
