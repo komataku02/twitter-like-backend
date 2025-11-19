@@ -3,44 +3,48 @@
 namespace App\Http\Controllers\Api\V1;
 
 use App\Http\Controllers\Controller;
-use Illuminate\Http\Request;
 use App\Http\Requests\UpdateProfileRequest;
+use App\Models\User;
+use App\Models\Comment;
+use Illuminate\Http\Request;
 
 class MeController extends Controller
 {
-    // GET /api/me
+    /**
+     * 共通のレスポンス整形
+     */
+    private function toProfileArray(User $u): array
+    {
+        $postsCount    = $u->posts()->count();
+        $commentsCount = Comment::where('user_id', $u->id)->count();
+        $likesCount    = $u->receivedLikes()->count(); // このユーザーの投稿についたいいね
+
+        return [
+            'id'           => $u->id,
+            'name'         => $u->name,
+            'username'     => $u->username,
+            'email'        => $u->email,
+            'firebase_uid' => $u->firebase_uid,
+            'bio'          => $u->bio,
+
+            'posts_count'    => $postsCount,
+            'comments_count' => $commentsCount,
+            'likes_count'    => $likesCount,
+
+            'created_at'     => $u->created_at,
+        ];
+    }
+
+    // GET /api/v1/me
     public function show(Request $request)
     {
         /** @var \App\Models\User $u */
         $u = $request->attributes->get('auth_user');
 
-        //投稿数・コメント数・「獲得いいね数」を集計
-        $postsCount = $u->posts()->count();
-        $commentsCount = $u->comments()->count();
-
-        //獲得いいね数...このユーザーの投稿についたLIKEの総数
-        $likesCount = $u->receivedlikes()->count();
-        // もし「自分が押したいいね数」にしたい場合は、代わりに：
-        // $likesCount = $u->likes()->count();
-
-        return response()->json([
-            'id' => $u->id,
-            'name' => $u->name,
-            'username' => $u->username,
-            'email' => $u->email,
-            'firebase_uid' => $u->firebase_uid,
-
-            //プロフィール表示用の統計
-            'posts_count' => $postsCount,
-            'comments_count' => $commentsCount,
-            'likes_count' => $likesCount,
-
-            //フロントで登録日表示を使えるようにcreate_atも返す
-            'created_at' => $u->created_at,
-        ]);
+        return response()->json($this->toProfileArray($u));
     }
 
-    //PUT /api/me
+    // PUT /api/v1/me
     public function update(UpdateProfileRequest $request)
     {
         /** @var \App\Models\User $u */
@@ -49,11 +53,6 @@ class MeController extends Controller
         $u->fill($request->validated());
         $u->save();
 
-        return response()->json([
-            'id' => $u->id,
-            'name' => $u->name,
-            'username' => $u->username,
-            'email' => $u->email,
-        ]);
+        return response()->json($this->toProfileArray($u));
     }
 }

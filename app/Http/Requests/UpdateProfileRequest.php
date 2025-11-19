@@ -3,42 +3,30 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class UpdateProfileRequest extends FormRequest
 {
-    /**
-     * Determine if the user is authorized to make this request.
-     */
     public function authorize(): bool
     {
+        // 認可は firebase ミドルウェア側でやっているので true でOK
         return true;
     }
 
-    /**
-     * Get the validation rules that apply to the request.
-     *
-     * @return array<string, \Illuminate\Contracts\Validation\ValidationRule|array<mixed>|string>
-     */
     public function rules(): array
     {
-        $userId = auth()->id() ?? $this->user()?->id; // 念のための両対応
-
         return [
-            'username' => [
-                'required','string','max:20',
-                Rule::unique('users', 'username')->ignore($userId),
-            ],
-            'name' => ['sometimes', 'string', 'max:50'],
+            'name' => ['nullable', 'string', 'max:50'],
+            'username' => ['nullable', 'string', 'max:30'],
+            'bio' => ['nullable', 'string', 'max:160'],
         ];
     }
 
-    public function messages(): array
+    public function attributes(): array
     {
         return [
-            'username.required' => 'ユーザー名は必須です',
-            'username.max' => 'ユーザー名は20文字以内で入力してください',
-            'username.unique' => 'このユーザー名は既に使われています',
+            'name' => '表示名',
+            'username' => 'ユーザー名',
+            'bio' => '自己紹介',
         ];
     }
 }
