@@ -1,7 +1,6 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use Illuminate\Http\Request;
 
 use App\Http\Controllers\HealthCheckController;
 use App\Http\Controllers\Api\V1\PostsController;
@@ -25,13 +24,15 @@ Route::prefix('v1')->group(function () {
 
         // comments
         Route::post('/posts/{post}/comments', [CommentsController::class, 'store'])->whereNumber('post');
+        Route::put('/posts/{post}/comments/{comment}', [CommentsController::class, 'update'])
+            ->whereNumber('post')->whereNumber('comment');
         Route::delete('/posts/{post}/comments/{comment}', [CommentsController::class, 'destroy'])
             ->whereNumber('post')->whereNumber('comment');
 
         // likes
         Route::post('/posts/{post}/likes/toggle', [LikesController::class, 'toggle'])->whereNumber('post');
 
-        // ★ ここに /me を置く → /api/v1/me
+        // me
         Route::get('/me', [MeController::class, 'show']);
         Route::put('/me', [MeController::class, 'update']);
     });
