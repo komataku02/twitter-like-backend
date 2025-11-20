@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
         // me
         Route::get('/me', [MeController::class, 'show']);
         Route::put('/me', [MeController::class, 'update']);
+        Route::post('/me/avatar', [MeController::class, 'updateAvatar']);
     });
 });
 
